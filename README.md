@@ -6,7 +6,6 @@ Convenience functions for using and inspecting DBus.
 
 
 ```common-lisp
-#+begin_src lisp
   (ql:quickload :dbus-tools)
   (dbus-tools:all-names :system)
   (dbus-tools:all-names :session)
