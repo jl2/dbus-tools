@@ -2,7 +2,6 @@
 
 ;; Copyright (c) 2023 Jeremiah LaRocco <jeremiah_larocco@fastmail.com>
 
-
 ;; Permission to use, copy, modify, and/or distribute this software for any
 ;; purpose with or without fee is hereby granted, provided that the above
 ;; copyright notice and this permission notice appear in all copies.
@@ -17,7 +16,6 @@
 
 (in-package :dbus-tools)
 
-
 (deftype bus-type () '(member :system :session))
 
 (defun get-bus (which)
@@ -25,15 +23,40 @@
     (:system (dbus:system-server-addresses))
     (:session (dbus:session-server-addresses))))
 
-(defun all-names (which-bus)
+(defun list-all-names (which-bus)
   (declare (type bus-type which-bus))
   (dbus:with-open-bus (bus (get-bus which-bus))
     (dbus:list-names bus)))
+
+(defun list-paths (which-bus service)
+  (let ((uri "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd")
+        (pathname (asdf:system-relative-pathname :dbus-tools "introspect.dtd")))
+    (flet ((resolver (pubid sysid)
+	         (declare (ignore pubid))
+	         (when (puri:uri= sysid (puri:parse-uri uri))
+	           (open pathname :element-type '(unsigned-byte 8)))))
+      (let ((xml-doc (cxml:parse (dbus-tools:invoke-method-simple which-bus
+                                                                  service
+                                                                  "/"
+                                                                  "org.freedesktop.DBus.Introspectable"
+                                                                  "Introspect")
+                                 (cxml-dom:make-dom-builder)
+                                 :entity-resolver #'resolver
+                                 :validate nil)))
+        ;; (xpath:map-node-set (curry #'xpath:evaluate "string(@name)") (xpath:evaluate "/node/node/*" xml-doc))
+        xml-doc))))
+
 
 (defun get-managed-objects (which-bus service object)
   (declare (type bus-type which-bus))
   (dbus:with-open-bus (bus (get-bus which-bus))
     (dbus:get-managed-objects bus service object)))
+
+(defun managed-object-name (object)
+  (car object))
+
+(defun managed-object-value (object)
+  (cdr object))
 
 (defun get-all-properties (which-bus service object interface)
   (declare (type bus-type which-bus))
@@ -47,46 +70,22 @@
            (interface (gethash (slot-value obj 'DBUS/INTROSPECT::interfaces) interface)))
       interface)))
 
-
 (defun inspect-dbus (which-bus)
   (declare (type bus-type which-bus))
   (dbus-tools:inspect-introspected-object which-bus
                                           "org.freedesktop.DBus"
                                           "/org/freedesktop/DBus"))
 
-(defun inspect-bluetooth-device (which-bus &optional (device-path "/org/bluez/hci0/dev_00_0A_45_1A_13_5E"))
-  (declare (type bus-type which-bus))
-  (inspect-introspected-object which-bus
-                               "org.bluez"
-                               device-path))
-
-(defun invoke-method-simple (which-bus service object interface method &rest args)
+(defun invoke-method-simple (which-bus service object interface method &optional (signature "") &rest args)
   (declare (type bus-type which-bus))
   (dbus:with-open-bus (bus (get-bus which-bus))
     (dbus:invoke-method (dbus:bus-connection bus)
                         method
                         :arguments args
                         :path object
+                        :signature signature
                         :interface interface
                         :destination service)))
-
-(defun volume-up (which-bus &optional (device-path "/org/bluez/hci0/dev_00_0A_45_1A_13_5E"))
-  (declare (type bus-type which-bus))
-  (dbus:with-open-bus (bus (get-bus which-bus))
-    (dbus:invoke-method (dbus:bus-connection bus)
-                        "VolumeUp"
-                        :path device-path
-                        :interface "org.bluez.MediaControl1"
-                        :destination "org.bluez")))
-
-(defun volume-down (which-bus &optional (device-path "/org/bluez/hci0/dev_00_0A_45_1A_13_5E"))
-  (declare (type bus-type which-bus))
-  (dbus:with-open-bus (bus (get-bus which-bus))
-    (dbus:invoke-method (dbus:bus-connection bus)
-                        "VolumeDown"
-                        :path device-path
-                        :interface "org.bluez.MediaControl1"
-                        :destination "org.bluez")))
 
 (defun inspect-introspected-object (which-bus service object)
   (declare (type bus-type which-bus))
@@ -116,17 +115,21 @@
    "/org/freedesktop/DBus"
    "org.freedesktop.DBus"
    "GetConnectionUnixProcessID"
-   service))
+   service
+   ""))
 
-(defun all-bluetooth-objects (which-bus)
-  (declare (type bus-type which-bus))
-  (dbus:with-open-bus (bus (get-bus which-bus))
-    (dbus:get-managed-objects bus "org.bluez" "/")))
 
-(defun is-bluetooth-device (object)
-  (cl-ppcre:scan-to-strings
-   "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)$" (car object)))
+(defun has-interface (interface object)
+  (loop
+    :for obj :in (cdr object)
+    :do
+       (loop
+         :for (interface-name interface-data) :in obj
+         :when (string= interface interface-name)
+           :do
+              (return-from has-interface t)))
+  nil)
 
-(defun all-bluetooth-devices ()
-  (remove-if-not #'is-bluetooth-device (all-bluetooth-objects :system)))
 
+(defun describe-type (type-string)
+  type-string)

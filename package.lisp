@@ -19,20 +19,30 @@
   (:nicknames)
 
   (:use #:cl #:alexandria)
-  (:export 
-           #:all-bluetooth-objects
+  (:export #:list-bluetooth-objects
+           #:list-bluetooth-devices
+           #:list-bluetooth-services
+           #:list-bluetooth-battery-levels
            #:is-bluetooth-device
-           #:all-bluetooth-devices
-           #:inspect-introspected-object
-           #:inspect-dbus
            #:inspect-bluetooth-device
-           #:list-interfaces
-           #:all-names
-           #:get-managed-objects
-           #:get-all-properties
-           #:query-objects-in-service
            #:volume-up
            #:volume-down
+
+           #:inspect-introspected-object
+           #:inspect-dbus
+
+           #:list-interfaces
+           #:list-all-names
+           #:list-paths
+           #:get-managed-objects
+           #:get-all-properties
+
+           #:query-objects-in-service
+
            #:invoke-method-simple
+
            #:who-owns
+
+           ;; Not yet implemented...
+           #:describe-type
            ))

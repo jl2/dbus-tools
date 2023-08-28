@@ -20,7 +20,8 @@
   :license  "ISC"
   :version "0.0.1"
   :serial t
-  :depends-on (#:j-utils #:alexandria #:dbus)
+  :depends-on (#:j-utils #:alexandria #:dbus #:cxml #:xpath)
   :components ((:file "package")
-               (:file "dbus-tools"))
+               (:file "dbus-tools")
+               (:file "bluez"))
   :in-order-to ((test-op (test-op dbus-tools.test))))
