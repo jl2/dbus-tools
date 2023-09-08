@@ -56,6 +56,19 @@
 (defun list-bluetooth-devices ()
   (remove-if-not (curry #'has-interface "org.bluez.Device1") (list-bluetooth-objects)))
 
+(defun bluetooth-connect (device-name)
+  (dbus-tools:invoke-method-simple :system
+                                   "org.bluez"
+                                   device-name
+                                   "org.bluez.Device1"
+                                   "Connect"))
+
+(defun bluetooth-disconnect (device-name)
+  (dbus-tools:invoke-method-simple :system
+                                   "org.bluez"
+                                   device-name
+                                   "org.bluez.Device1"
+                                   "Disconnect"))
 
 (defun list-bluetooth-services (&optional device)
   (remove-if-not (lambda (value)

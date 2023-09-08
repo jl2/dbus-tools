@@ -16,13 +16,15 @@
 
 (defpackage :dbus-tools
 
-  (:nicknames)
+  (:nicknames :dbt)
 
   (:use #:cl #:alexandria)
   (:export #:list-bluetooth-objects
            #:list-bluetooth-devices
            #:list-bluetooth-services
            #:list-bluetooth-battery-levels
+           #:bluetooth-connect
+           #:bluetooth-disconnect
            #:is-bluetooth-device
            #:inspect-bluetooth-device
            #:volume-up
@@ -33,7 +35,11 @@
 
            #:list-interfaces
            #:list-all-names
-           #:list-paths
+           #:list-all-paths
+           #:list-paths-at
+           #:read-gatt-characteristic-by-service
+           #:read-gatt-characteristic-by-uuid
+           #:to-string
            #:get-managed-objects
            #:get-all-properties
 
@@ -45,4 +51,8 @@
 
            ;; Not yet implemented...
            #:describe-type
+           #:managed-object-name
+           #:get-value
+           #:managed-object-value
+           #:pp
            ))
