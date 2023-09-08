@@ -193,7 +193,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                               "~%~a~a: "
                               (make-string indent :initial-element #\space)
                               (car thing))
-                      (pretty-print (cdr thing) :stream stream :indent (+ 2 indent)))))
+                      (pp (cdr thing) :stream stream :indent (+ 2 indent)))))
               (t
                (format stream "~a" thing)))))
 
