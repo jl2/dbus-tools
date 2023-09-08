@@ -36,5 +36,3 @@ Convenience functions for using and inspecting DBus.
 ISC
 
 Copyright (c) 2023 Jeremiah LaRocco <jeremiah_larocco@fastmail.com>
-
-

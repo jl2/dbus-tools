@@ -28,7 +28,7 @@
   :depends-on (:dbus-tools
                :dbus
                :fiveam)
-  
+
   :components ((:module "t"
                 :components
                 ((:file "package"))))

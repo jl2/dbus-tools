@@ -87,4 +87,3 @@
                                                     "org.bluez"
                                                     (dbus-tools::managed-object-name device)
                                                     "org.bluez.Battery1"))))
-
