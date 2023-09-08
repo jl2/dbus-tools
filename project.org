@@ -14,6 +14,9 @@ Convenience functions for using and inspecting DBus.
   (dbus-tools:list-interfaces :system
                               "org.bluez" "/")
 
+  (dbus-tools:list-all-paths :system
+                              "org.bluez")
+
   (dbus-tools:get-managed-objects  :system
                                    "org.bluez"
                                    "/")
