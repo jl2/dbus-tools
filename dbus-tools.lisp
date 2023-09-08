@@ -80,7 +80,8 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
     :when (not next)
       :nconc (list path)))
 
-(defun get-managed-objects (which-bus service object)
+(defun list-managed-objects (which-bus service object)
+  "List all managed objects under object."
   (declare (type bus-type which-bus)
            (string service object))
   (dbus:with-open-bus (bus (get-bus which-bus))
@@ -98,7 +99,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
   (declare (type list object))
   (cadr object))
 
-(defun get-value (object name)
+(defun find-value (object name)
   "Returns a child value in a DBus list object.
 (get-value (name1 ((name2 value2) (name3 value3))) name3) -> value3"
   (declare (type list object)
@@ -143,6 +144,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                         :destination service)))
 
 (defun inspect-introspected-object (which-bus service object)
+  "Open an instrospected object in the Slime Inspector."
   (declare (type bus-type which-bus)
            (type string service object))
   (dbus:with-open-bus (bus (get-bus which-bus))
@@ -150,6 +152,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
       (swank:inspect-in-emacs obj))))
 
 (defun list-interfaces (which-bus service object)
+  "List all interfaces that object satisfies."
   (declare (type bus-type which-bus)
            (type string service object))
   (dbus:with-open-bus (bus (get-bus which-bus))
@@ -157,6 +160,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
       (hash-table-keys (slot-value obj 'DBUS/INTROSPECT::interfaces)))))
 
 (defun who-owns (which-bus service)
+  "See which process owns a service."
   (declare (type bus-type which-bus)
            (type string service))
   (invoke-method-simple which-bus
@@ -167,23 +171,24 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                         service
                         ""))
 
-(defun has-interface (interface object)
+(defun has-interface (object interface)
+  "Check if object satisfies interface."
   (declare (type string interface)
            (type list object))
   (loop
     :for obj :in (cdr object)
-    :do
-       (loop
-         :for (interface-name interface-data) :in obj
-         :when (string= interface interface-name)
-           :do (return-from has-interface t)))
+    :do (loop
+          :for (interface-name interface-data) :in obj
+          :when (string= interface interface-name)
+            :do (return-from has-interface t)))
   nil)
 
 (defun describe-type (type-string)
   type-string)
 
-(defun pp (result &key (stream t) (indent 0))
-  (loop :for thing :in result
+(defun pp (values &key (stream t) (indent 0))
+  "Pretty print values - a list structure returned by the dbus API."
+  (loop :for thing :in values
         :do (typecase thing
               (cons
                (cond ((= (length thing) 1)
@@ -198,6 +203,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                (format stream "~a" thing)))))
 
 (defun read-gatt-characteristic-by-service (service-path)
+  "Read a GATT characteristic by service path."
   (declare (type string service-path))
   (let ((values (dbus-tools:invoke-method-simple :system
                                                  "org.bluez"
@@ -211,11 +217,12 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                 :element-type '(unsigned-byte 8))))
 
 (defun read-gatt-characteristic-by-uuid (device uuid)
+  "Read a GATT characteristic by UUID."
   (declare (type string device uuid))
-  (let ((services (list-bluetooth-services device)))
+  (let ((services (list-bt-services device)))
     (flet ((matches-uuid (service)
-             (string= (dbt:get-value
-                       (dbt:get-value (dbt:managed-object-value service)
+             (string= (find-value
+                       (find-value (dbt:managed-object-value service)
                                       "org.bluez.GattCharacteristic1")
                        "UUID")
                       uuid)))
@@ -223,6 +230,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                                                          services))))))
 
 (defun to-string (buffer)
+  "Convert an octet buffer into a string."
   (declare (type vector buffer))
   ;; Chop the trailing 0 bytes
   (babel:octets-to-string (subseq buffer

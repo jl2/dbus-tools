@@ -15,75 +15,92 @@
 ;; OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 (in-package :dbus-tools)
-(defun inspect-bluetooth-device (which-bus &optional (device-path "/org/bluez/hci0/dev_00_0A_45_1A_13_5E"))
-  (declare (type bus-type which-bus))
-  (inspect-introspected-object which-bus
+
+(defun inspect-bt-device (&optional (device-path (managed-object-name
+                                                     (first-bt-with-interface "org.bluez.MediaControl1"))))
+  "Inspect a Bluez bt device object."
+  (inspect-introspected-object :system
                                "org.bluez"
                                device-path))
+(defun first-bt-with-interface (interface)
+  (loop :for device :in (list-bt-devices)
+        :when (has-interface device interface)
+          :return device))
 
-(defun volume-up (which-bus &optional (device-path "/org/bluez/hci0/dev_00_0A_45_1A_13_5E"))
-  (declare (type bus-type which-bus))
-  (dbus:with-open-bus (bus (get-bus which-bus))
+(defun volume-up (&optional (device-path (managed-object-name
+                                          (first-bt-with-interface "org.bluez.MediaControl1"))))
+
+  (dbus:with-open-bus (bus (get-bus :system))
     (dbus:invoke-method (dbus:bus-connection bus)
                         "VolumeUp"
                         :path device-path
                         :interface "org.bluez.MediaControl1"
                         :destination "org.bluez")))
 
-(defun volume-down (which-bus &optional (device-path "/org/bluez/hci0/dev_00_0A_45_1A_13_5E"))
-  (declare (type bus-type which-bus))
-  (dbus:with-open-bus (bus (get-bus which-bus))
+(defun volume-down (&optional (device-path (managed-object-name
+                                            (first-bt-with-interface "org.bluez.MediaControl1"))))
+
+  (dbus:with-open-bus (bus (get-bus :system))
     (dbus:invoke-method (dbus:bus-connection bus)
                         "VolumeDown"
                         :path device-path
                         :interface "org.bluez.MediaControl1"
                         :destination "org.bluez")))
 
-(defun list-bluetooth-objects ()
-  (declare (type bus-type :system))
+(defun list-bt-objects ()
+
   (dbus:with-open-bus (bus (get-bus :system))
     (dbus:get-managed-objects bus "org.bluez" "/")))
 
-(defun is-bluetooth-device (object)
-  (cl-ppcre:scan-to-strings "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)$" (car object)))
+(defun is-bt-device (object)
+  (cl-ppcre:scan-to-strings
+   "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)$"
+   (managed-object-name object)))
 
-(defun is-bluetooth-service (object)
-  (cl-ppcre:scan-to-strings "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)/service.*$" (car object)))
+(defun is-bt-service (object)
+  (cl-ppcre:scan-to-strings
+   "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)/service.*$"
+   (managed-object-name object)))
 
-(defun list-bluetooth-adapters ()
-  (remove-if-not (curry #'has-interface "org.bluez.Adapter1") (list-bluetooth-objects)))
 
-(defun list-bluetooth-devices ()
-  (remove-if-not (curry #'has-interface "org.bluez.Device1") (list-bluetooth-objects)))
+(defun list-bt-adapters ()
+  (remove-if-not (rcurry #'has-interface "org.bluez.Adapter1") (list-bt-objects)))
 
-(defun bluetooth-connect (device-name)
+(defun list-bt-media-controllers ()
+  (remove-if-not (rcurry #'has-interface "org.bluez.MediaControl1") (list-bt-objects)))
+
+(defun list-bt-devices ()
+  (remove-if-not (rcurry #'has-interface "org.bluez.Device1") (list-bt-objects)))
+
+(defun bt-connect (device-name)
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
                                    device-name
                                    "org.bluez.Device1"
                                    "Connect"))
 
-(defun bluetooth-disconnect (device-name)
+(defun bt-disconnect (device-name)
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
                                    device-name
                                    "org.bluez.Device1"
                                    "Disconnect"))
 
-(defun list-bluetooth-services (&optional device)
+(defun list-bt-services (&optional device)
   (remove-if-not (lambda (value)
-                   (and (is-bluetooth-service value)
+                   (and (is-bt-service value)
                         (if device
                             (cl-ppcre:scan (format nil "^~a.*" device) (car value))
                             t)))
-                 (list-bluetooth-objects)))
+                 (list-bt-objects)))
 
-(defun list-bluetooth-battery-levels ()
+(defun list-bt-battery-levels ()
+  ""
   (loop
-    :for device :in (dbus-tools:list-bluetooth-devices)
-    :when (dbus-tools::has-interface "org.bluez.Battery1" device)
+    :for device :in (list-bt-devices)
+    :when (has-interface device "org.bluez.Battery1")
       :collect (cons (dbus-tools::managed-object-name device)
                      (dbus-tools:get-all-properties :system
                                                     "org.bluez"
-                                                    (dbus-tools::managed-object-name device)
+                                                    (managed-object-name device)
                                                     "org.bluez.Battery1"))))

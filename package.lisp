@@ -19,14 +19,17 @@
   (:nicknames :dbt)
 
   (:use #:cl #:alexandria)
-  (:export #:list-bluetooth-objects
-           #:list-bluetooth-devices
-           #:list-bluetooth-services
-           #:list-bluetooth-battery-levels
-           #:bluetooth-connect
-           #:bluetooth-disconnect
-           #:is-bluetooth-device
-           #:inspect-bluetooth-device
+  (:export #:list-bt-objects
+           #:list-bt-devices
+           #:list-bt-services
+           #:list-bt-battery-levels
+           #:first-bt-with-interface
+           #:bt-connect
+           #:bt-disconnect
+           #:is-bt-device
+
+           #:inspect-bt-device
+
            #:volume-up
            #:volume-down
 
@@ -40,7 +43,7 @@
            #:read-gatt-characteristic-by-service
            #:read-gatt-characteristic-by-uuid
            #:to-string
-           #:get-managed-objects
+           #:list-managed-objects
            #:get-all-properties
 
            #:query-objects-in-service
@@ -51,8 +54,10 @@
 
            ;; Not yet implemented...
            #:describe-type
+
            #:managed-object-name
-           #:get-value
            #:managed-object-value
+           #:find-value
+
            #:pp
            ))
