@@ -27,35 +27,40 @@
         :when (has-interface device interface)
           :return device))
 
-(defun volume-up (&optional (device-path (managed-object-name
-                                          (first-bt-with-interface "org.bluez.MediaControl1"))))
-
+(defun volume-up (&key
+                    (steps 1)
+                    (device-path (managed-object-name
+                                  (first-bt-with-interface "org.bluez.MediaControl1"))))
+  "Execute VolumeUp method one or more times on a org.bluez.MediaControl1 object."
   (dbus:with-open-bus (bus (get-bus :system))
-    (dbus:invoke-method (dbus:bus-connection bus)
-                        "VolumeUp"
-                        :path device-path
-                        :interface "org.bluez.MediaControl1"
-                        :destination "org.bluez")))
+    (dotimes (i steps)
+      (dbus:invoke-method (dbus:bus-connection bus)
+                          "VolumeUp"
+                          :path device-path
+                          :interface "org.bluez.MediaControl1"
+                          :destination "org.bluez"))))
 
-(defun volume-down (&optional (device-path (managed-object-name
-                                            (first-bt-with-interface "org.bluez.MediaControl1"))))
-
+(defun volume-down (&key
+                      (steps 1)
+                      (device-path (managed-object-name
+                                    (first-bt-with-interface "org.bluez.MediaControl1"))))
+  "Execute VolumeDown method one or more times on a org.bluez.MediaControl1 object."
   (dbus:with-open-bus (bus (get-bus :system))
-    (dbus:invoke-method (dbus:bus-connection bus)
-                        "VolumeDown"
-                        :path device-path
-                        :interface "org.bluez.MediaControl1"
-                        :destination "org.bluez")))
+    (dotimes (i steps)
+      (dbus:invoke-method (dbus:bus-connection bus)
+                          "VolumeDown"
+                          :path device-path
+                          :interface "org.bluez.MediaControl1"
+                          :destination "org.bluez"))))
 
 (defun list-bt-objects ()
-
+  "List all org.bluez managed objects."
   (dbus:with-open-bus (bus (get-bus :system))
     (dbus:get-managed-objects bus "org.bluez" "/")))
 
 (defun is-bt-device (object)
-  (cl-ppcre:scan-to-strings
-   "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)$"
-   (managed-object-name object)))
+  "Test if object looks like a bluetooth device."
+  (has-interface object "org.bluez.Device1"))
 
 (defun is-bt-service (object)
   (cl-ppcre:scan-to-strings
@@ -98,9 +103,17 @@
   ""
   (loop
     :for device :in (list-bt-devices)
-    :when (has-interface device "org.bluez.Battery1")
-      :collect (cons (dbus-tools::managed-object-name device)
-                     (dbus-tools:get-all-properties :system
-                                                    "org.bluez"
-                                                    (managed-object-name device)
-                                                    "org.bluez.Battery1"))))
+    :for is-connected = (find-value (find-value (managed-object-value device)
+                                                "org.bluez.Device1")
+                                    "Connected")
+    :for is-paired = (find-value (find-value (managed-object-value device)
+                                             "org.bluez.Device1")
+                                 "Paired")
+    :when  (and (or is-paired
+                    is-connected)
+                (has-interface device "org.bluez.Battery1"))
+      :collect (cons device
+                     (get-all-properties :system
+                                         "org.bluez"
+                                         (managed-object-name device)
+                                         "org.bluez.Battery1"))))

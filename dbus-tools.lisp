@@ -143,13 +143,15 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                         :interface interface
                         :destination service)))
 
+(defparameter *inspect-function* #'inspect)
 (defun inspect-introspected-object (which-bus service object)
   "Open an instrospected object in the Slime Inspector."
   (declare (type bus-type which-bus)
            (type string service object))
   (dbus:with-open-bus (bus (get-bus which-bus))
     (let ((obj (dbus:make-object-from-introspection (dbus:bus-connection bus) object service)))
-      (swank:inspect-in-emacs obj))))
+
+      (funcall *inspect-function* obj))))
 
 (defun list-interfaces (which-bus service object)
   "List all interfaces that object satisfies."
