@@ -16,12 +16,14 @@
 
 (in-package :dbus-tools)
 
-(defun inspect-bt-device (&optional (device-path (managed-object-name
-                                                     (first-bt-with-interface "org.bluez.MediaControl1"))))
-  "Inspect a Bluez bt device object."
+(defun inspect-bt-device (&optional (device-path
+                                     (managed-object-name
+                                      (first-bt-with-interface "org.bluez.MediaControl1"))))
+  "Inspect a Bluez device object by device path.  Default path is the first device implementing MediaControl1."
   (inspect-introspected-object :system
                                "org.bluez"
                                device-path))
+
 (defun first-bt-with-interface (interface)
   (loop :for device :in (list-bt-devices)
         :when (has-interface device interface)
@@ -74,8 +76,30 @@
 (defun list-bt-media-controllers ()
   (remove-if-not (rcurry #'has-interface "org.bluez.MediaControl1") (list-bt-objects)))
 
-(defun list-bt-devices ()
-  (remove-if-not (rcurry #'has-interface "org.bluez.Device1") (list-bt-objects)))
+(defun bt-scan (&key (timeout 5)
+                  (adapter (managed-object-name (first (list-bt-adapters)))))
+  (invoke-method-simple :system
+                        "org.bluez"
+                        adapter
+                        "org.bluez.Adapter1"
+                        "StartDiscovery")
+  (sleep timeout)
+  (invoke-method-simple :system
+                        "org.bluez"
+                        adapter
+                        "org.bluez.Adapter1"
+                        "StopDiscovery"))
+(defun has-property-value (obj)
+  )
+
+(defun list-bt-devices (&key
+                          (interfaces nil)
+                          )
+  (flet ((bt-predicate (obj)
+           (and (has-interface obj "org.bluez.Device1")
+                (every (curry #'has-interface obj) (ensure-list interfaces)))))
+
+    (remove-if-not #'bt-predicate (list-bt-objects))))
 
 (defun bt-connect (device-name)
   (dbus-tools:invoke-method-simple :system
@@ -83,6 +107,12 @@
                                    device-name
                                    "org.bluez.Device1"
                                    "Connect"))
+(defun bt-pair (device-name)
+  (dbus-tools:invoke-method-simple :system
+                                   "org.bluez"
+                                   device-name
+                                   "org.bluez.Device1"
+                                   "Pair"))
 
 (defun bt-disconnect (device-name)
   (dbus-tools:invoke-method-simple :system
@@ -103,17 +133,13 @@
   ""
   (loop
     :for device :in (list-bt-devices)
-    :for is-connected = (find-value (find-value (managed-object-value device)
-                                                "org.bluez.Device1")
+    :for dev = (managed-object-value device)
+    :for is-connected = (find-value (find-value dev "org.bluez.Device1")
                                     "Connected")
-    :for is-paired = (find-value (find-value (managed-object-value device)
+    :for is-paired = (find-value (find-value dev
                                              "org.bluez.Device1")
                                  "Paired")
-    :when  (and (or is-paired
-                    is-connected)
+    :when  (and (or is-paired is-connected)
                 (has-interface device "org.bluez.Battery1"))
-      :collect (cons device
-                     (get-all-properties :system
-                                         "org.bluez"
-                                         (managed-object-name device)
-                                         "org.bluez.Battery1"))))
+      :collect (cons (find-value (find-value dev "org.bluez.Device1") "Name")
+                     (find-value (find-value dev "org.bluez.Battery1") "Percentage"))))

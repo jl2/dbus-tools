@@ -20,15 +20,19 @@
 
   (:use #:cl #:alexandria)
   (:export #:list-bt-objects
+           #:list-bt-adapters
+           #:bt-scan
            #:list-bt-devices
            #:list-bt-services
            #:list-bt-battery-levels
            #:first-bt-with-interface
            #:bt-connect
+           #:bt-pair
            #:bt-disconnect
            #:is-bt-device
 
            #:inspect-bt-device
+           #:use-inspector
 
            #:volume-up
            #:volume-down

@@ -101,7 +101,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
 
 (defun find-value (object name)
   "Returns a child value in a DBus list object.
-(get-value (name1 ((name2 value2) (name3 value3))) name3) -> value3"
+(find-value (name1 ((name2 value2) (name3 value3))) name3) -> value3"
   (declare (type list object)
            (type string name))
   (cadr (assoc name object :test #'string=)))
@@ -143,7 +143,23 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                         :interface interface
                         :destination service)))
 
+(deftype inspector-type ()
+  '(member :swank :mcclim :built-in))
+
 (defparameter *inspect-function* #'inspect)
+
+(defun use-inspector (&optional (which :built-in))
+  (declare (type inspector-type which))
+  (ecase which
+    (:built-in
+     (setf *inspect-function* #'inspect))
+    #+mcclim
+    (:mcclim
+     (setf *inspect-function* #'fi:insp))
+    #+swank
+    (:swank
+     (setf *inspect-function* #'swank:inspect-in-emacs))))
+
 (defun inspect-introspected-object (which-bus service object)
   "Open an instrospected object in the Slime Inspector."
   (declare (type bus-type which-bus)
@@ -170,6 +186,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                         "/org/freedesktop/DBus"
                         "org.freedesktop.DBus"
                         "GetConnectionUnixProcessID"
+                        "s"
                         service
                         ""))
 
