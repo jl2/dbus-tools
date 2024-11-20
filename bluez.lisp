@@ -16,23 +16,23 @@
 
 (in-package :dbus-tools)
 
-(defun inspect-bt-device (&optional (device-path
+(defun bt-inspect-device (&optional (device-path
                                      (managed-object-name
-                                      (first-bt-with-interface "org.bluez.MediaControl1"))))
+                                      (bt-first-with-interface "org.bluez.MediaControl1"))))
   "Inspect a Bluez device object by device path.  Default path is the first device implementing MediaControl1."
   (inspect-introspected-object :system
                                "org.bluez"
                                device-path))
 
-(defun first-bt-with-interface (interface)
-  (loop :for device :in (list-bt-devices)
+(defun bt-first-with-interface (interface)
+  (loop :for device :in (bt-list-devices)
         :when (has-interface device interface)
           :return device))
 
 (defun volume-up (&key
                     (steps 1)
                     (device-path (managed-object-name
-                                  (first-bt-with-interface "org.bluez.MediaControl1"))))
+                                  (bt-first-with-interface "org.bluez.MediaControl1"))))
   "Execute VolumeUp method one or more times on a org.bluez.MediaControl1 object."
   (dbus:with-open-bus (bus (get-bus :system))
     (dotimes (i steps)
@@ -45,7 +45,7 @@
 (defun volume-down (&key
                       (steps 1)
                       (device-path (managed-object-name
-                                    (first-bt-with-interface "org.bluez.MediaControl1"))))
+                                    (bt-first-with-interface "org.bluez.MediaControl1"))))
   "Execute VolumeDown method one or more times on a org.bluez.MediaControl1 object."
   (dbus:with-open-bus (bus (get-bus :system))
     (dotimes (i steps)
@@ -55,29 +55,29 @@
                           :interface "org.bluez.MediaControl1"
                           :destination "org.bluez"))))
 
-(defun list-bt-objects ()
+(defun bt-list-objects ()
   "List all org.bluez managed objects."
   (dbus:with-open-bus (bus (get-bus :system))
     (dbus:get-managed-objects bus "org.bluez" "/")))
 
-(defun is-bt-device (object)
+(defun bt-device-p (object)
   "Test if object looks like a bluetooth device."
   (has-interface object "org.bluez.Device1"))
 
-(defun is-bt-service (object)
+(defun bt-service-p (object)
   (cl-ppcre:scan-to-strings
    "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)/service.*$"
    (managed-object-name object)))
 
 
-(defun list-bt-adapters ()
-  (remove-if-not (rcurry #'has-interface "org.bluez.Adapter1") (list-bt-objects)))
+(defun bt-list-adapters ()
+  (remove-if-not (rcurry #'has-interface "org.bluez.Adapter1") (bt-list-objects)))
 
-(defun list-bt-media-controllers ()
-  (remove-if-not (rcurry #'has-interface "org.bluez.MediaControl1") (list-bt-objects)))
+(defun bt-list-media-controllers ()
+  (remove-if-not (rcurry #'has-interface "org.bluez.MediaControl1") (bt-list-objects)))
 
 (defun bt-scan (&key (timeout 5)
-                  (adapter (managed-object-name (first (list-bt-adapters)))))
+                  (adapter (managed-object-name (first (bt-list-adapters)))))
   (invoke-method-simple :system
                         "org.bluez"
                         adapter
@@ -92,14 +92,14 @@
 (defun has-property-value (obj)
   )
 
-(defun list-bt-devices (&key
+(defun bt-list-devices (&key
                           (interfaces nil)
                           )
   (flet ((bt-predicate (obj)
            (and (has-interface obj "org.bluez.Device1")
                 (every (curry #'has-interface obj) (ensure-list interfaces)))))
 
-    (remove-if-not #'bt-predicate (list-bt-objects))))
+    (remove-if-not #'bt-predicate (bt-list-objects))))
 
 (defun bt-connect (device-name)
   (dbus-tools:invoke-method-simple :system
@@ -121,18 +121,18 @@
                                    "org.bluez.Device1"
                                    "Disconnect"))
 
-(defun list-bt-services (&optional device)
+(defun bt-list-services (&optional device)
   (remove-if-not (lambda (value)
-                   (and (is-bt-service value)
+                   (and (bt-service-p value)
                         (if device
                             (cl-ppcre:scan (format nil "^~a.*" device) (car value))
                             t)))
-                 (list-bt-objects)))
+                 (bt-list-objects)))
 
-(defun list-bt-battery-levels ()
+(defun bt-list-battery-levels ()
   ""
   (loop
-    :for device :in (list-bt-devices)
+    :for device :in (bt-list-devices)
     :for dev = (managed-object-value device)
     :for is-connected = (find-value (find-value dev "org.bluez.Device1")
                                     "Connected")

@@ -14,24 +14,24 @@
 ;; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 ;; OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-(defpackage :dbus-tools
+q(defpackage :dbus-tools
 
   (:nicknames :dbt)
 
   (:use #:cl #:alexandria)
-  (:export #:list-bt-objects
-           #:list-bt-adapters
+  (:export #:bt-list-objects
+           #:bt-list-adapters
            #:bt-scan
-           #:list-bt-devices
-           #:list-bt-services
-           #:list-bt-battery-levels
-           #:first-bt-with-interface
+           #:bt-list-devices
+           #:bt-list-services
+           #:bt-list-battery-levels
+           #:bt-first-with-interface
            #:bt-connect
            #:bt-pair
            #:bt-disconnect
-           #:is-bt-device
+           #:bt-device-p
 
-           #:inspect-bt-device
+           #:bt-inspect-device
            #:use-inspector
 
            #:volume-up
