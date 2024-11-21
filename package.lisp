@@ -24,7 +24,7 @@
            #:bt-scan
            #:bt-list-devices
            #:bt-list-services
-           #:bt-list-battery-levels
+           #:bt-battery-levels
            #:bt-first-with-interface
            #:bt-connect
            #:bt-pair

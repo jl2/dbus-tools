@@ -89,35 +89,45 @@
                         adapter
                         "org.bluez.Adapter1"
                         "StopDiscovery"))
-(defun has-property-value (obj)
-  )
+(defun nested-get (dev &rest args)
+  (loop :for val = dev :then (find-value val arg)
+        :for arg :in args
+        :finally (return val)))
+
 
 (defun bt-list-devices (&key
                           (interfaces nil)
+                          (full nil)
                           )
   (flet ((bt-predicate (obj)
            (and (has-interface obj "org.bluez.Device1")
                 (every (curry #'has-interface obj) (ensure-list interfaces)))))
 
-    (remove-if-not #'bt-predicate (bt-list-objects))))
+    (let ((devs (remove-if-not #'bt-predicate (bt-list-objects))))
+      (if full
+          devs
+          (loop
+            :for device :in devs
+            :for dev = (managed-object-value device)
+            :collect (nested-get dev "org.bluez.Device1" "Name"))))))
 
-(defun bt-connect (device-name)
+(defun bt-connect (device-path)
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
-                                   device-name
+                                   device-path
                                    "org.bluez.Device1"
                                    "Connect"))
-(defun bt-pair (device-name)
+(defun bt-pair (device-path)
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
-                                   device-name
+                                   device-path
                                    "org.bluez.Device1"
                                    "Pair"))
 
-(defun bt-disconnect (device-name)
+(defun bt-disconnect (device-path)
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
-                                   device-name
+                                   device-path
                                    "org.bluez.Device1"
                                    "Disconnect"))
 
@@ -129,17 +139,14 @@
                             t)))
                  (bt-list-objects)))
 
-(defun bt-list-battery-levels ()
-  ""
+(defun bt-battery-levels ()
+  "Return a list of (device name . battery level) for all connected Bluetooth devices."
   (loop
-    :for device :in (bt-list-devices)
+    :for device :in (bt-list-devices :interfaces '("org.bluez.Battery1")
+                                     :full t)
     :for dev = (managed-object-value device)
-    :for is-connected = (find-value (find-value dev "org.bluez.Device1")
-                                    "Connected")
-    :for is-paired = (find-value (find-value dev
-                                             "org.bluez.Device1")
-                                 "Paired")
-    :when  (and (or is-paired is-connected)
-                (has-interface device "org.bluez.Battery1"))
-      :collect (cons (find-value (find-value dev "org.bluez.Device1") "Name")
-                     (find-value (find-value dev "org.bluez.Battery1") "Percentage"))))
+    :for is-connected = (nested-get dev "org.bluez.Device1" "Connected")
+    :for is-paired = (nested-get dev "org.bluez.Device1" "Paired")
+    :when  (or is-paired is-connected)
+      :collect (cons (nested-get dev "org.bluez.Device1" "Name")
+                     (nested-get dev "org.bluez.Battery1" "Percentage"))))
