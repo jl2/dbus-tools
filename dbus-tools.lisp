@@ -238,7 +238,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
 (defun read-gatt-characteristic-by-uuid (device uuid)
   "Read a GATT characteristic by UUID."
   (declare (type string device uuid))
-  (let ((services (list-bt-services device)))
+  (let ((services (bt-list-services device)))
     (flet ((matches-uuid (service)
              (string= (find-value
                        (find-value (dbt:managed-object-value service)
