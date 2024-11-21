@@ -130,7 +130,13 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
                                           "org.freedesktop.DBus"
                                           "/org/freedesktop/DBus"))
 
-(defun invoke-method-simple (which-bus service object interface method &optional (signature "") &rest args)
+(defun invoke-method-simple (which-bus
+                             service
+                             object
+                             interface
+                             method
+                             &optional (signature "")
+                             &rest args)
   "Invoke a method on object through the specified interface."
   (declare (type bus-type which-bus)
            (type string service object interface method signature))

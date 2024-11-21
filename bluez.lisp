@@ -65,19 +65,28 @@
   (has-interface object "org.bluez.Device1"))
 
 (defun bt-service-p (object)
+  "Test if object looks like a bluetooth service."
   (cl-ppcre:scan-to-strings
    "^/org/bluez/hci[0-9]+/dev_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)_\(..\)/service.*$"
    (managed-object-name object)))
 
 
-(defun bt-list-adapters ()
-  (remove-if-not (rcurry #'has-interface "org.bluez.Adapter1") (bt-list-objects)))
+(defun bt-list-adapters (&key (full nil))
+  "Return a list of Bluetooth adapters on the host."
+  (let ((adapters (remove-if-not (rcurry #'has-interface "org.bluez.Adapter1") (bt-list-objects))))
+    (if full
+        adapters
+        (loop :for ada :in adapters
+              :for adapter = (managed-object-value ada)
+              :collect (nested-get adapter "org.bluez.Adapter1" "Name")))))
 
 (defun bt-list-media-controllers ()
+  "List Bluetooth devices that implement the org.bluez.MediaControl1 interface."
   (remove-if-not (rcurry #'has-interface "org.bluez.MediaControl1") (bt-list-objects)))
 
 (defun bt-scan (&key (timeout 5)
                   (adapter (managed-object-name (first (bt-list-adapters)))))
+  "Enable Bluetooth discovery on the specified adapter for timeout seconds."
   (invoke-method-simple :system
                         "org.bluez"
                         adapter
@@ -89,16 +98,18 @@
                         adapter
                         "org.bluez.Adapter1"
                         "StopDiscovery"))
-(defun nested-get (dev &rest args)
-  (loop :for val = dev :then (find-value val arg)
-        :for arg :in args
+(defun nested-get (dev &rest path)
+  "(find-value (find-value... (find-value dev (car path) (cadr path) ...)"
+  (loop :for val = dev :then (find-value val key)
+        :for key :in path
         :finally (return val)))
 
 
 (defun bt-list-devices (&key
                           (interfaces nil)
-                          (full nil)
-                          )
+                          (full nil))
+  "List Bluetooth devices that implement the given list of interfaces, or all devices.
+If full, return full objects, otherwise return a list of user friendly device names."
   (flet ((bt-predicate (obj)
            (and (has-interface obj "org.bluez.Device1")
                 (every (curry #'has-interface obj) (ensure-list interfaces)))))
@@ -112,12 +123,14 @@
             :collect (nested-get dev "org.bluez.Device1" "Name"))))))
 
 (defun bt-connect (device-path)
+  "Connect to a Bluettooth device by its device-path"
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
                                    device-path
                                    "org.bluez.Device1"
                                    "Connect"))
 (defun bt-pair (device-path)
+  "Pair with a Bluettooth device by its device-path"
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
                                    device-path
@@ -125,6 +138,7 @@
                                    "Pair"))
 
 (defun bt-disconnect (device-path)
+  "Disconnect from a Bluettooth device by its device-path"
   (dbus-tools:invoke-method-simple :system
                                    "org.bluez"
                                    device-path
@@ -132,12 +146,14 @@
                                    "Disconnect"))
 
 (defun bt-list-services (&optional device)
-  (remove-if-not (lambda (value)
-                   (and (bt-service-p value)
-                        (if device
-                            (cl-ppcre:scan (format nil "^~a.*" device) (car value))
-                            t)))
-                 (bt-list-objects)))
+  "List Bluetooth services on the specified device, or all Bluetooth services if no device given."
+  (remove-if-not
+   (lambda (value)
+     (and (bt-service-p value)
+          (if device
+              (cl-ppcre:scan (format nil "^~a.*" device) (car value))
+              t)))
+   (bt-list-objects)))
 
 (defun bt-battery-levels ()
   "Return a list of (device name . battery level) for all connected Bluetooth devices."
