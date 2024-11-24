@@ -25,7 +25,7 @@
                                device-path))
 
 (defun bt-first-with-interface (interface)
-  (loop :for device :in (bt-list-devices)
+  (loop :for device :in (bt-list-devices :full t)
         :when (has-interface device interface)
           :return device))
 
@@ -75,7 +75,12 @@
   "Return a list of Bluetooth adapters on the host."
   (let ((adapters (remove-if-not (rcurry #'has-interface "org.bluez.Adapter1") (bt-list-objects))))
     (if full
-        adapters
+        (mapcar (lambda (adapter)
+                    (let ((obj (cadr adapter)))
+                      (cons (cons (nested-get obj "org.bluez.Adapter1" "Name")
+                                  (car adapter))
+                            obj)))
+                  adapters)
         (loop :for ada :in adapters
               :for adapter = (managed-object-value ada)
               :collect (nested-get adapter "org.bluez.Adapter1" "Name")))))
@@ -110,13 +115,20 @@
                           (full nil))
   "List Bluetooth devices that implement the given list of interfaces, or all devices.
 If full, return full objects, otherwise return a list of user friendly device names."
-  (flet ((bt-predicate (obj)
-           (and (has-interface obj "org.bluez.Device1")
-                (every (curry #'has-interface obj) (ensure-list interfaces)))))
+  (flet ((bt-predicate (dev)
+           (let ((obj dev))
+             (and (has-interface obj "org.bluez.Device1")
+                  (every (curry #'has-interface obj)
+                         (ensure-list interfaces))))))
 
     (let ((devs (remove-if-not #'bt-predicate (bt-list-objects))))
       (if full
-          devs
+          (mapcar (lambda (dev)
+                    (let ((obj (cadr dev)))
+                      (cons (cons (nested-get obj "org.bluez.Device1" "Name")
+                                  (car dev))
+                            obj)))
+                  devs)
           (loop
             :for device :in devs
             :for dev = (managed-object-value device)
@@ -135,15 +147,15 @@ If full, return full objects, otherwise return a list of user friendly device na
                                    "org.bluez"
                                    device-path
                                    "org.bluez.Device1"
-                                   "Pair"))
+                                   "Pair")
 
-(defun bt-disconnect (device-path)
-  "Disconnect from a Bluettooth device by its device-path"
-  (dbus-tools:invoke-method-simple :system
-                                   "org.bluez"
-                                   device-path
-                                   "org.bluez.Device1"
-                                   "Disconnect"))
+  (defun bt-disconnect (device-path)
+    "Disconnect from a Bluettooth device by its device-path"
+    (dbus-tools:invoke-method-simple :system
+                                     "org.bluez"
+                                     device-path
+                                     "org.bluez.Device1"
+                                     "Disconnect")))
 
 (defun bt-list-services (&optional device)
   "List Bluetooth services on the specified device, or all Bluetooth services if no device given."
