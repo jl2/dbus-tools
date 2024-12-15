@@ -160,7 +160,7 @@ If full, return full objects, otherwise return a list of user friendly device na
   (loop
     :for device :in (bt-list-devices :interfaces '("org.bluez.Battery1")
                                      :full t)
-    :for dev = (managed-object-value (cdr device))
+    :for dev = (managed-object-value device)
     :for is-connected = (nested-get dev "org.bluez.Device1" "Connected")
     :for is-paired = (nested-get dev "org.bluez.Device1" "Paired")
     :when  (or is-paired is-connected)

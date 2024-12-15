@@ -97,7 +97,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
   "Return the value in a DBus list object.
 (managed-object-value (name1 ((name2 value2) (name3 value3)))) -> ((name2 value2) (name3 value3))"
   (declare (type list object))
-  (cdr object))
+  (cadr object))
 
 (defun find-value (object name)
   "Returns a child value in a DBus list object.
@@ -204,7 +204,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
     :for obj :in (cdr object)
     :do (loop
           :for (interface-name interface-data) :in obj
-          :when (string= interface (car interface-name))
+          :when (string= interface interface-name)
             :do (return-from has-interface t)))
   nil)
 
