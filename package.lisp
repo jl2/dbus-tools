@@ -19,33 +19,18 @@
   (:nicknames :dbt)
 
   (:use #:cl #:alexandria)
-  (:export #:bt-list-objects
-           #:bt-list-adapters
-           #:bt-scan
-           #:bt-list-devices
-           #:bt-list-services
-           #:bt-battery-levels
-           #:bt-first-with-interface
-           #:bt-connect
-           #:bt-pair
-           #:bt-disconnect
-           #:bt-device-p
-
-           #:bt-inspect-device
+  (:export
            #:use-inspector
 
-           #:volume-up
-           #:volume-down
+           #:has-interface
 
            #:inspect-introspected-object
            #:inspect-dbus
-
+           #:get-bus
            #:list-interfaces
            #:list-all-names
            #:list-all-paths
            #:list-paths-at
-           #:read-gatt-characteristic-by-service
-           #:read-gatt-characteristic-by-uuid
            #:to-string
            #:list-managed-objects
            #:get-all-properties

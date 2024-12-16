@@ -227,33 +227,6 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
               (t
                (format stream "~a" thing)))))
 
-(defun read-gatt-characteristic-by-service (service-path)
-  "Read a GATT characteristic by service path."
-  (declare (type string service-path))
-  (let ((values (dbus-tools:invoke-method-simple :system
-                                                 "org.bluez"
-                                                 service-path
-                                                 "org.bluez.GattCharacteristic1"
-                                                 "ReadValue"
-                                                 "a{sv}"
-                                                 nil)))
-    (make-array (length values)
-                :initial-contents values
-                :element-type '(unsigned-byte 8))))
-
-(defun read-gatt-characteristic-by-uuid (device uuid)
-  "Read a GATT characteristic by UUID."
-  (declare (type string device uuid))
-  (let ((services (bt-list-services device)))
-    (flet ((matches-uuid (service)
-             (string= (find-value
-                       (find-value (dbt:managed-object-value service)
-                                      "org.bluez.GattCharacteristic1")
-                       "UUID")
-                      uuid)))
-      (read-gatt-characteristic-by-service (car (find-if #'matches-uuid
-                                                         services))))))
-
 (defun to-string (buffer)
   "Convert an octet buffer into a string."
   (declare (type vector buffer))

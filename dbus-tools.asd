@@ -22,6 +22,5 @@
   :serial t
   :depends-on (#:alexandria #:dbus #:cxml #:xpath)
   :components ((:file "package")
-               (:file "dbus-tools")
-               (:file "bluez"))
+               (:file "dbus-tools"))
   :in-order-to ((test-op (test-op dbus-tools.test))))
