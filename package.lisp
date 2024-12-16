@@ -31,7 +31,6 @@
            #:list-all-names
            #:list-all-paths
            #:list-paths-at
-           #:to-string
            #:list-managed-objects
            #:get-all-properties
 

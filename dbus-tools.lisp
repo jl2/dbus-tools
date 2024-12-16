@@ -227,10 +227,4 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
               (t
                (format stream "~a" thing)))))
 
-(defun to-string (buffer)
-  "Convert an octet buffer into a string."
-  (declare (type vector buffer))
-  ;; Chop the trailing 0 bytes
-  (babel:octets-to-string (subseq buffer
-                                  0 (search #(0)
-                                            buffer))))
+
