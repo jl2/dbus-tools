@@ -164,7 +164,7 @@ For example (list-paths-at :system \:org.bluez\" \"/\") -> (\"/org\")"
      (setf *inspect-function* #'fi:insp))
     #+swank
     (:swank
-     (setf *inspect-function* #'swank:inspect-in-emacs))))
+     (setf *inspect-function* #+swank #'swank:inspect-in-emacs))))
 
 (defun inspect-introspected-object (which-bus service object)
   "Open an instrospected object in the Slime Inspector."
